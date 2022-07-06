@@ -1,16 +1,9 @@
 const { logger } = require('../../../../core/util/logger');
-const { NotifierService } = require('../../../../src/classes/notifier');
-const { Server, server } = require('../../../../core/server/server');
-const { responses } = require('../../../../src/functions/response');
-const { vvMatcher, VVAccount, VVBots, VVMatch } = require('./Classes/Classes');
-const { AccountServer } = require('../../../../src/classes/account');
+const { vvMatcher, VVMatch } = require('./Classes/Classes');
 const { FriendshipController } = require('../../../../src/Controllers/FriendshipController');
 const { ResponseController } = require('../../../../src/Controllers/ResponseController');
 const { ConfigController } = require('../../../../src/Controllers/ConfigController');
-const serverUrl = server.getBackendUrl();
-const serverIp = server.getIp();
-const wsServerIp = server.getIp();
-const wsServerPort = server.getPort() + 2;
+const serverUrl = ResponseController.getHttpsUrl();
 
 const urlPrefixes = {
 	"location": "/client/location/",
@@ -64,15 +57,16 @@ initResponseOverrides = function() {
 	 
 
 	  ResponseController.overrideRoute("/client/match/group/leave", 
-	  (url, sessionID, info) => { console.log("/client/match/group/leave"); });
+	  (url, info, sessionID) => { console.log("/client/match/group/leave"); });
 
 	  ResponseController.overrideRoute("/client/match/group/delete", 
-	  (url, sessionID, info) => { console.log("/client/match/group/delete"); });
+	  (url, info, sessionID) => { console.log("/client/match/group/delete"); });
 
 	  ResponseController.overrideRoute("/client/match/group/getInvites", 
-	  (url, sessionID, info) => { 
-		return vvMatcher.getInvites(info);
+	  (url, info, sessionID) => { 
+		return vvMatcher.getInvites(sessionID);
 	 });
+
 
 
 	// responses.staticResponses["/client/match/group/getInvites"] = 
@@ -82,30 +76,31 @@ initResponseOverrides = function() {
 
 	// responses.staticResponses["/client/match/group/invite/accept"] = 
 	ResponseController.overrideRoute("/client/match/group/invite/accept", 
-	  (url, sessionID, info) => { 
-		return vvMatcher.groupInviteAccept(sessionID, info);
+	  (url, info, sessionID) => { 
+		return vvMatcher.groupInviteAccept(info, sessionID);
 	});
 
-	responses.staticResponses["/client/match/group/invite/cancel"] = 
-	  (url, sessionID, info) => { 
+	// responses.staticResponses["/client/match/group/invite/cancel"] = 
+	ResponseController.overrideRoute("/client/match/group/invite/cancel", 
+	  (url, info, sessionID) => { 
 		return vvMatcher.groupInviteDecline(sessionID, info);
-	};
+	});
 
 	// responses.staticResponses["/client/match/group/invite/send"] = 
 	ResponseController.overrideRoute("/client/match/group/invite/send", 
-	  (url, sessionID, info) => { 
-		return vvMatcher.sendInvite(sessionID, info);
+	  (url, info, sessionID) => { 
+		return vvMatcher.sendInvite(info, sessionID);
 	});
 
 	// responses.staticResponses["/client/match/group/looking/start"] = 
 	ResponseController.overrideRoute("/client/match/group/looking/start", 
-	  (url, sessionID, info) => { 
+	  (url, info, sessionID) => { 
 		return vvMatcher.groupSearchStart(sessionID, info);
 	});
 
 	// responses.staticResponses["/client/match/group/looking/stop"] = 
 	ResponseController.overrideRoute("/client/match/group/looking/stop", 
-	  (url, sessionID, info) => { 
+	  (url, info, sessionID) => { 
 		return vvMatcher.groupSearchStop(sessionID, info);
 	});
 
@@ -435,7 +430,7 @@ ResponseController.Routes.push(
 }
 });
 
-	responses.staticResponses["/client/match/group/server/players/spawn"] = 
+	ResponseController.addRoute["/client/match/group/server/players/spawn"] = 
 	  (url, info, sessionID) => { 
 
 		console.log(info);
@@ -454,10 +449,7 @@ ResponseController.Routes.push(
 		return JSON.stringify("OK");
 	};
 
-	ResponseController.Routes.push(
-		{
-			url: "/client/match/group/server/bots/spawn",
-			action:
+	ResponseController.addRoute("/client/match/group/server/bots/spawn",
 	  (url, info, sessionID) => { 
 
 		let existingServer = vvMatcher.getServerByGroupId(info.groupId);
@@ -476,10 +468,10 @@ ResponseController.Routes.push(
 		// }
 
 		return JSON.stringify("OK");
-		}});
+		});
 
 
-	responses.staticResponses["/client/match/group/server/players/get"] = 
+		ResponseController.addRoute("/client/match/group/server/players/get",
 	  (url, info, sessionID) => { 
 
 		let existingServer = vvMatcher.getServerByGroupId(info.groupId);
@@ -499,15 +491,15 @@ ResponseController.Routes.push(
 			return JSON.stringify(existingServer.inGamePlayers);
 		else
 			return JSON.stringify({});
-	};
+	})
 
-	responses.staticResponses["/client/match/group/server/stop"] = 
+	ResponseController.addRoute("/client/match/group/server/stop", 
 	  (url, info, sessionID) => { 
 
     	return response_f.nullResponse();
-	};
+	})
 
-	responses.staticResponses["/client/match/group/server/player/add"] = 
+	ResponseController.addRoute("/client/match/group/server/player/add", 
 	  (url, info, sessionID) => { 
 		console.log(JSON.stringify(info));
 		// console.log(JSON.stringify(sessionID));
@@ -525,9 +517,9 @@ ResponseController.Routes.push(
 		}
 
 		return response_f.nullResponse();
-	};
+	});
 
-	responses.staticResponses["/client/match/group/server/bot/add"] = 
+	ResponseController.addRoute("/client/match/group/server/bot/add",
 	  (url, info, sessionID) => { 
 		if(info === undefined) {
 			console.error("No data provided");
@@ -557,9 +549,9 @@ ResponseController.Routes.push(
 		console.log(vvMatcher.servers[info["groupId"]].bots[info["botId"]]);
 
 		return response_f.nullResponse();
-	};
+	});
 
-	responses.staticResponses["/client/match/group/server/player/join"] = 
+	ResponseController.addRoute("/client/match/group/server/player/join",
 	  (url, info, sessionID) => { 
 		// console.log(JSON.stringify(info));
 		// console.log(JSON.stringify(sessionID));
@@ -572,200 +564,10 @@ ResponseController.Routes.push(
 		}
 
 		return response_f.nullResponse();
-	};
+	});
 
 
-	// responses.staticResponses["/client/match/group/server/bots/serverUpdate"] = 
-	//   (url, info, sessionID) => { 
-	// 	// console.log("/client/match/group/server/bots/serverUpdate");
-
-	// 	// console.log(JSON.stringify(info));
-	// 	// console.log(JSON.stringify(sessionID));
-	// 	if(info !== undefined && info.length == 0) {
-	// 		console.log("No data provided");
-	// 	}
-
-	// 	if(vvMatcher.servers[sessionID] !== undefined) {
-	// 		vvMatcher.servers[sessionID].bots = info;
-	// 	}
-
-	// 	return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/player/applyDamage"] = 
-	//   (url, info, sessionID) => { 
-	// 	if(info === undefined) {
-	// 		console.error("No data provided");
-	// 	}
-
-	// 	vvMatcher.sendDataAboutOccurance(info["groupId"], info["isBot"], info);
-
-	// 	return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/player/executeShotSkill"] = 
-	//   (url, info, sessionID) => { 
-	// 	if(info === undefined) {
-	// 		console.error("No data provided");
-	// 	}
-
-	// 	vvMatcher.sendDataAboutOccurance(info["groupId"], info["isBot"], info);
-
-
-	// 	return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/player/toggleProne"] = 
-	//   (url, info, sessionID) => { 
-	// 	if(info === undefined) {
-	// 		console.error("No data provided");
-	// 	}
-
-	// 	vvMatcher.sendDataAboutOccurance(info["groupId"], info["isBot"], info);
-
-	// 	return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/player/move"] = 
-	//   (url, info, sessionID) => { 
-	// 	if(info === undefined) {
-	// 		console.error("No data provided");
-	// 	}
-
-	// 	if(vvMatcher.servers[sessionID] !== undefined) {
-	// 		if(vvMatcher.servers[sessionID].bots !== undefined) {
-	// 			console.log(info);
-	// 		}
-	// 	}
-
-	// 	return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/player/dead"] = 
-	//   (url, info, sessionID) => { 
-	// 	if(info === undefined) {
-	// 		console.error("No data provided");
-	// 	}
-
-	// 	vvMatcher.sendDataAboutOccurance(info["groupId"], info["isBot"], info);
-
-	// 	return response_f.nullResponse();
-	// };
-
-	
-
-	// responses.staticResponses["/client/match/group/server/player/heal"] = 
-	//   (url, info, sessionID) => { 
-	// 	if(info === undefined) {
-	// 		console.error("No data provided");
-	// 	}
-
-	// 	if(vvMatcher.servers[sessionID] !== undefined) {
-	// 		if(vvMatcher.servers[sessionID].bots !== undefined) {
-	// 			console.log(info);
-	// 		}
-	// 	}
-
-	// 	return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/player/door"] = 
-	//   (url, info, sessionID) => { 
-	// 	if(info === undefined) {
-	// 		console.error("No data provided");
-	// 	}
-	// 	let server = vvMatcher.getServerByGroupId(info["groupId"]);
-	// 	if(server !== undefined) {
-    	
-	// 		if(server.doors === undefined) {
-	// 			server.doors = {};
-	// 		}
-
-	// 		server.doors[info["doorId"]] = info;
-
-	// 	}
-
-	// 	return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/door/clientReceive"] = 
-	//   (url, info, sessionID) => { 
-		
-	// 	let server = vvMatcher.getServerByGroupId(info);
-	// 	if(server !== undefined && server.doors !== undefined) {
-    	
-	// 		return JSON.stringify(server.doors);
-
-	// 	}
-	// 	else
-	// 		return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/player/clientReceive"] = 
-	//   (url, info, sessionID) => { 
-		
-	// 	if(vvMatcher.servers[info] !== undefined) {
-			
-	// 		return JSON.stringify(vvMatcher.servers[info].players);
-
-	// 	}
-	// 	else
-	// 		return response_f.nullResponse();
-	// };
-
-
-	// responses.staticResponses["/client/match/group/server/bots/clientReceive"] = 
-	//   (url, info, sessionID) => { 
-		
-	// 	if(vvMatcher.servers[info] !== undefined) {
-    	
-	// 		return JSON.stringify(vvMatcher.servers[info].bots);
-
-	// 	}
-	// 	else
-	// 		return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/bots/download"] = 
-	//   (url, info, sessionID) => { 
-	// 	console.log("/client/match/group/server/bots/download");
-
-		
-	// 	var d = { d: "" + info + "" }
-    // 	return JSON.stringify(vvMatcher.servers[d.d].bots);
-	// };
-
-	// responses.staticResponses["/client/match/group/server/bots/upload"] = 
-	//   (url, info, sessionID) => { 
-	// 	console.log("/client/match/group/server/bots/upload");
-
-		
-	// 	var d = { d: "" + info + "" }
-    // 	return JSON.stringify(vvMatcher.servers[d.d].bots);
-	// };
-
-	// responses.staticResponses["/client/match/group/server/players/update"] = 
-	//   (url, info, sessionID) => { 
-		
-
-	// 	return response_f.nullResponse();
-	// };
-
-	// responses.staticResponses["/client/match/group/server/players/download"] = 
-	//   (url, info, sessionID) => { 
-		
-	// 	var d = { d: "" + info + "" }
-    // 	return JSON.stringify(vvMatcher.servers[d.d].players);
-	// };
-
-	// responses.staticResponses["/client/match/group/server/killSomeone"] = 
-	//   (url, info, sessionID) => { 
-		
-
-	// 	return response_f.nullResponse();
-	// };
-
-	responses.staticResponses["/client/game/logout"] = 
+	ResponseController.overrideRoute("/client/game/logout",
 	(url, info, sessionID) => { 
 		
 		// console.log(info);
@@ -787,9 +589,9 @@ ResponseController.Routes.push(
 		}
 
 		return response_f.nullResponse();
-	};
+	});
 
-	responses.staticResponses["/client/match/group/exit_from_menu"] = 
+	ResponseController.overrideRoute("/client/match/group/exit_from_menu", 
 	(url, info, sessionID) => { 
 		
 		console.log(info);
@@ -812,194 +614,52 @@ ResponseController.Routes.push(
 
 
 		return response_f.nullResponse();
-	};
+	});
 
-	responses.staticResponses["/client/game/profile/list"] =
-	(url, info, sessionID) => {
-		// the best place to update health because its where profile is updating in client also!!!
-		if (!AccountServer.isWiped(sessionID) && profile_f.handler.profileAlreadyCreated(sessionID)) {
-		  health_f.handler.healOverTime(profile_f.handler.getPmcProfile(sessionID), info, sessionID);
-		}
+	// ResponseController.overrideRoute("/client/game/profile/list",
+	// (url, info, sessionID) => {
+	// 	// the best place to update health because its where profile is updating in client also!!!
+	// 	if (!AccountServer.isWiped(sessionID) && profile_f.handler.profileAlreadyCreated(sessionID)) {
+	// 	  health_f.handler.healOverTime(profile_f.handler.getPmcProfile(sessionID), info, sessionID);
+	// 	}
 
-		// let allAccounts = AccountServer.getAllAccounts();
+	// 	// let allAccounts = AccountServer.getAllAccounts();
 
-		// Fix SalesSum issue (needs to be pushed to JET)
-		let allProfiles = profile_f.handler.getCompleteProfile(sessionID);
-		for(let pr in allProfiles) {
-			for(let traderIndex in allProfiles[pr].TradersInfo) {
-				let trader = allProfiles[pr].TradersInfo[traderIndex];
-				let cleanedTrader = {
-					"SalesSum": trader.SalesSum,
-					"Standing": trader.Standing,
-					"unlocked": trader.unlocked,
-					"salesSum": trader.salesSum !== undefined 
-						&& trader.salesSum != NaN && trader.salesSum != null ? trader.salesSum : 0, 
-					"standing": trader.standing !== undefined 
-						&& trader.standing != NaN && trader.standing != null ? trader.standing : 0 
-				};
-				allProfiles[pr].TradersInfo[traderIndex] = cleanedTrader;
-			}
-		}
-		// for(let ind in allAccounts) {
-		// 	let acc = allAccounts[ind];
-		// 	// console.log(acc);
-		// 	let cp = profile_f.handler.getCompleteProfile(acc._id);
-		// 	// console.log(cp);
-		// 	for(let cpInd in cp) {
-		// 		allProfiles.push(cp[cpInd]);
-		// 	}
-		// }
+	// 	// Fix SalesSum issue (needs to be pushed to JET)
+	// 	let allProfiles = profile_f.handler.getCompleteProfile(sessionID);
+	// 	for(let pr in allProfiles) {
+	// 		for(let traderIndex in allProfiles[pr].TradersInfo) {
+	// 			let trader = allProfiles[pr].TradersInfo[traderIndex];
+	// 			let cleanedTrader = {
+	// 				"SalesSum": trader.SalesSum,
+	// 				"Standing": trader.Standing,
+	// 				"unlocked": trader.unlocked,
+	// 				"salesSum": trader.salesSum !== undefined 
+	// 					&& trader.salesSum != NaN && trader.salesSum != null ? trader.salesSum : 0, 
+	// 				"standing": trader.standing !== undefined 
+	// 					&& trader.standing != NaN && trader.standing != null ? trader.standing : 0 
+	// 			};
+	// 			allProfiles[pr].TradersInfo[traderIndex] = cleanedTrader;
+	// 		}
+	// 	}
 
-		// console.log("Number of Profiles Returned :: " + allProfiles.length);
+	// 	return response_f.getBody(allProfiles);
+	// });
 
-		// allProfiles = allProfiles.filter(x=>x.aid == sessionID);
-		// for(let pr in allProfiles) {
-		// 	console.log(allProfiles[pr].aid);
-		// }
-		//console.log(allProfiles);
-
-		return response_f.getBody(allProfiles);
-	}
-
-	responses.staticResponses["/client/match/group/status"] =
+	ResponseController.overrideRoute("/client/match/group/status",
+	// responses.staticResponses["/client/match/group/status"] =
 	(url, info, sessionID) => {
 		let status = vvMatcher.getGroupStatus(info, sessionID);
 		return response_f.getBody(status);
-	}
+	});
 	
-	// responses.staticResponses["/client/match/group/create"] =
-	// (url, info, sessionID) => {
-	// 	let status = vvMatcher.groupCreate(info, sessionID);
-	// 	return response_f.getBody(status);
-	// }
 	ResponseController.overrideRoute("/client/match/group/create",
 		(url, info, sessionID) => {
-			let status = vvMatcher.groupCreate(info, sessionID);
+			logger.logSuccess("vvMatcher override");
+			const status = vvMatcher.groupCreate(info, sessionID);
 			return response_f.getBody(status);
 		}
 	);
-
-	responses.staticResponses["/client/game/profile/singularProfile"] =
-	(url, info, sessionID) => {
-        console.log("loading singular Profile for " + info);
-
-        // console.log(sessionID);
-		let acc = AccountServer.getAllAccounts().find(x => x._id == info);
-		if(acc == undefined || acc == null) {
-			console.log("Singular Profile doesn't exist for " + info);
-			return JSON.stringify(null);
-		}
-		let profile = profile_f.handler.getPmcProfile(info);
-		// return response_f.getBody(profile_f.handler.getCompleteProfile(sessionID));
-		// return response_f.getBody(profile);
-		return JSON.stringify(profile);
-	}
-
-    const wsServerIp = server.getIp();
-    const wsServerPort = server.getPort() + 2;
-    // const notifyServerAddress = `ws://${wsServerIp}:${wsServerPort}`;
-    const notifyServerAddressUrl = `ws://${server.getIp()}:${server.getPort()}`;
-
-	responses.staticResponses["/testANotifier"] = 
-	(url, info, sessionID) => {
-
-       console.log("test a notifier");
-       console.log(info);
-       console.log(sessionID);
-	}
-
-
-    // responses.staticResponses["/client/notifier/channel/create"] =
-	// (url, info, sessionID) => {
-
-    //     return response_f.getBody({
-    //         notifier: {
-    //           server: `${notifyServerAddressUrl}`,
-    //           channel_id: "testChannel",
-    //           url: `${notifyServerAddressUrl}`,
-    //         },
-    //         notifierServer: `${notifyServerAddressUrl}/${sessionID}`,
-    //       });
-	// }
-
-    // responses.staticResponses["/client/game/profile/select"] =
-	// (url, info, sessionID) => {
-
-    //     return response_f.getBody({
-    //         "status": "ok",
-    //         "notifier": NotifierService.getChannel(sessionID),
-    //         "notifierServer": NotifierService.getServer(sessionID)
-    //     });
-	// }
-
-	// responses.staticResponses["/client/friend/list"] =
-	//  (url, info, sessionID) => {
-
-	// 	var result = { Friends: [], Ignore: [], InIgnoreList: [] };
-
-
-	// 	result.Friends = FriendshipController.getFriends(sessionID);
-
-	// 	console.log(result);
-	// 	// let allOtherAccounts = AccountServer.getAllAccounts()
-	// 	// .filter(x=>x._id != sessionID);
-	// 	// result.Friends = allOtherAccounts;
-
-
-	// 	return response_f.getBody(result);
-       
-	// } 
-
-	// responses.staticResponses["/client/friend/delete"] =
-	//  (url, info, sessionID) => {
-
-	// 	console.log(info);
-	// 	console.log(sessionID);
-	// 	FriendshipController.deleteFriend(sessionID, info);
-       
-	// 	return response_f.nullResponse();
-	// } 
-   
-   
-
-    /// ----------------------------------------------------
-    // Stop arseholes getting into the server configs
-
-	responses.staticResponses["/server/config/accounts"] =
-	(url, info, sessionID) => {
-		return "GO FUCK YOURSELF";
-	}
-
-	
-	responses.staticResponses["/server/config/gameplay"] =
-	(url, info, sessionID) => {
-		return response_f.getBody("GO FUCK YOURSELF");
-	}
-
-	responses.staticResponses["/server/config/mods"] =
-	(url, info, sessionID) => {
-		return response_f.getBody("GO FUCK YOURSELF");
-	}
-
-	responses.staticResponses["/server/config/profiles"] =
-	(url, info, sessionID) => {
-		return response_f.getBody("GO FUCK YOURSELF");
-	}
-
-	responses.staticResponses["/server/config/server"] =
-	(url, info, sessionID) => {
-		return response_f.getBody("GO FUCK YOURSELF");
-	}
-
-	responses.staticResponses["/server/"] =
-	(url, info, sessionID) => {
-		return response_f.getBody("GO FUCK YOURSELF");
-	}
-
-	responses.staticResponses["/"] =
-	(url, info, sessionID) => {
-		return response_f.getBody("GO FUCK YOURSELF");
-	}
 
 	logger.logSuccess("[MOD] TarkovCoop; Responses Override Successful");
 }

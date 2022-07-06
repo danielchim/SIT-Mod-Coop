@@ -4,147 +4,22 @@ const path = require('path');
 const http = require('http');
 const WebSocket = require('ws'); // requires npm install ws on the Server
 const net = require('net'); // natural TCP Sockets
-const { responses } = require('../../../../src/functions/response');
 const responseOverrides = require("./responseOverrides")
 const location = require('../../../../src/classes/location');
-const { VVAccount, VVBots, VVMatch } = require('./Classes/Classes');
+const { vvMatcher, VVMatch } = require('./Classes/Classes');
 const { logger } = require('../../../../core/util/logger');
-const serverUrl = server.getBackendUrl();
-const serverIp = server.getIp();
 // const wsServerIp = server.getIp();
 // const wsServerPort = server.getPort() + 2;
 // const netSocketServerPort = wsServerPort + 1;
 const { customQuests } = require('./customQuests');
 const { customItems } = require('./customItems');
-const { AccountServer } = require('../../../../src/classes/account');
-
-const wsServerUrl = `ws://${server.getIp()}:${server.getPort()}`;
-
-// console.log(wsServerPort);
-// console.log(netSocketServerPort);
-
-// Create a server instance, and chain the listen function to it
-// The function passed to net.createServer() becomes the event handler for the 'connection' event
-// The sock object the callback function receives UNIQUE for each connection
-// net.createServer(function(sock) {
-//   // We have a connection - a socket object is assigned to the connection automatically
-//   let ipaddrandport = sock.remoteAddress +':'+ sock.remotePort;
-//   logger.logSuccess('[MOD] TarkovCoop; CONNECTED: ' + ipaddrandport);
- 
-//  // Add a 'data' event handler to this instance of socket
-//   sock.on('data', function(data) {
-//     // console.log('DATA ' + ipaddrandport + ': ' + data);
-// try {
-// 	var jsonData = JSON.parse(data);
-// 	// if(jsonData.groupId != undefined) {
-// 	// 	// grab the correct server to apply stuff to.
-// 	// 	let server = vvMatcher.getServerByGroupId(jsonData.groupId);
-// 	// 	if(server != undefined) {
-// 	// 		if(server.connections === undefined) {
-// 	// 			server.connections = [];
-// 	// 		}
-// 	// 		if(server.connections.find(x=> x == ipaddrandport) == undefined) {
-// 	// 			server.connections.push(ipaddrandport);
-// 	// 			console.log("Server " + jsonData.groupId + " now has " + server.connections.length + " connections");
-// 	// 		}
-// 	// 	}
-// 	// }
-// 	// console.log(jsonData);
-// }
-// catch (error) {
-// 	console.error(error);
-// }
-//     // Write the data back to the socket, the client will receive it as data from the server
-//     // sock.write('You said "' + data + '"');
-//   });
-//   // Add a 'close' event handler to this instance of socket
-//  sock.on('close', function(data) {
-// 	logger.logSuccess('[MOD] TarkovCoop; CLOSED: ' + ipaddrandport);
-// //    for(let s in vvMatcher.servers) {
-// // 		if(vvMatcher[s] !== undefined) {
-// // 			console.log(vvMatcher[s]);
-			
-// // 		}
-// //    }
-//  });
-
-// }).listen(netSocketServerPort, wsServerIp);
-
-// let serverSockets = [];
-// TODO: The port needs to be dynamic from a file
-// const wss = new WebSocket.Server(
-// 	{ 
-// 		host: wsServerIp
-// 		, port: wsServerPort
-// 		, perMessageDeflate: false
-// 	 },()=>{
-//     logger.logSuccess('[MOD] TarkovCoop; Web Socket Server::Started')
-// });
-
-// wss.on('error', function connection(error) {
-// 	console.error(error);
-// });
-
-// wss.on('connection', function connection(ws) {
-// 	serverSockets.push(ws);
-// 	logger.logSuccess("[MOD] TarkovCoop; New WebSocket Connection");
-
-//    ws.on('message', (data, isBinary) => {
-// 	// console.log("message");
-
-// 	if(data !== undefined) {
-// 		// console.log(data);
-
-// 		var outputData = {};
-// 		// convert it in to something usable!
-// 		var str = JSON.stringify(data.toString());
-// 		// console.log(str);
-// 		try {
-// 			outputData = JSON.parse(str);
-// 			console.log(outputData);
-// 		} catch (error) {
-// 			console.error(error);
-// 		}
-
-// 		//serverSockets.forEach(s => s.send(JSON.stringify(outputData)));
-// 		wss.clients.forEach(function each(client) {
-// 			if (client !== ws && client.readyState === WebSocket.OPEN) {
-// 			  client.send(JSON.stringify(outputData), { binary: isBinary });
-// 			}
-// 		  });
-// 	}
-//    });
-
-//    ws.on('ping', (data) => {
-// 	// console.log("~~~ ping ~~~");
-// 	if(data !== undefined)
-// 		// console.log(JSON.stringify(data));
-// 		wss.clients.forEach(function each(client) {
-// 			if (client !== ws && client.readyState === WebSocket.OPEN) {
-// 			  client.ping();
-// 			}
-// 		  });
-
-// 	});
-// 	ws.on('pong', (data) => {
-// 		// console.log("~~~ pong ~~~");
-// 		// if(data !== undefined)
-// 		// console.log(JSON.stringify(data));
-// 	});
-
-// })
-// wss.on('listening',()=>{
-//    logger.logSuccess('[MOD] TarkovCoop; Web Socket Server::Listening::ws:\\\\' + wsServerIp + ":" + wsServerPort)
-// })
-
-// wss.on('close',()=>{
-// 	logger.logSuccess('[MOD] TarkovCoop; Web Socket Server::Close::ws:\\\\' + wsServerIp + ":" + wsServerPort)
-//  })
+const { DialogueController } = require('../../../../src/Controllers/DialogueController');
+const { ResponseController } = require('../../../../src/Controllers/ResponseController');
+const serverUrl = ResponseController.getBackendUrl();
 
 function DeepCopy(obj) {
 	return JSON.parse(JSON.stringify(obj));
 }
-
 
 exports.mod = (mod_info) => {
 
@@ -158,6 +33,19 @@ exports.mod = (mod_info) => {
 	const dbDir = srcDir + "\\db\\"; // modfolder/src/db
 
     logger.logInfo(mod_info.name + ". Loading...");
+
+	// DialogueController.AddDialogueMessage("boolyboolycuntface", 
+	// {
+	// 	text: "",
+	// 	templateId: "boolyboolycuntface",
+	// 	type: dialogue_f.getMessageTypeValue("insuranceReturn"),
+	// 	maxStorageTime: 30 * 3600,
+	// 	systemData: {
+	// 		"date": utility.getDate(),
+	// 		"time": utility.getTime(),
+	// 	}
+	// }
+	// );
 	// logger.logInfo(JSON.stringify(mod_info));
 	
 	// New Match Handler Class
@@ -165,50 +53,9 @@ exports.mod = (mod_info) => {
 	//logger.logInfo(JSON.stringify(match_f.handler));
 	// initLocationAndLootOverrides();
 
-	initMatchOverrides();
+	// initMatchOverrides();
 
 	initResponseOverrides();
-
-	// New Account Handler Class
-	let vvAccounter = new VVAccount();
-	// account_f.handler.getAllAccounts = vvAccounter.getAllAccounts;
-	AccountServer.getAllAccounts = vvAccounter.getAllAccounts;
-	// AccountServer.getFriends = vvAccounter.getFriends;
-	// AccountServer.addFriendRequest = vvAccounter.addFriendRequest;
-	// AccountServer.addFriend = vvAccounter.addFriend;
-	// AccountServer.getFriendRequestOutbox = vvAccounter.getFriendRequestOutbox;
-	// AccountServer.getFriendRequestInbox = vvAccounter.getFriendRequestInbox;
-	if(AccountServer.getAllAccounts === vvAccounter.getAllAccounts)
-		logger.logSuccess("[MOD] TarkovCoop; Account Override Successful");
-	else {
-		logger.logError("[MOD] TarkovCoop; Account Override FAILED!");
-	}
-
-	// 
-	// Apply Bot Changes
-
-	// const modConfig = JSON.parse(fs.readFileSync(parentDir + 'mod.config.json'));
-	// if(modConfig.BotDifficultyMiniMod.enable === true) {
-
-	// 	var data = fs.readFileSync(parentDir + 'src/db/bots/normal.json');
-	// 	data = JSON.parse(data);
-	// 	global._database.bots.assault.difficulty.easy = data;
-	// 	global._database.bots.assault.difficulty.normal = data;
-	// 	global._database.bots.assault.difficulty.hard = data;
-	// 	global._database.bots.assault.difficulty.impossible = data;
-
-	// 	global._database.bots.pmcbot.difficulty.easy = data;
-	// 	global._database.bots.pmcbot.difficulty.normal = data;
-	// 	global._database.bots.pmcbot.difficulty.hard = data;
-	// 	global._database.bots.pmcbot.difficulty.impossible = data;
-
-	// 	global._database.bots.followerbully.difficulty.easy = data;
-	// 	global._database.bots.followerbully.difficulty.normal = data;
-	// 	global._database.bots.followerbully.difficulty.hard = data;
-	// 	global._database.bots.followerbully.difficulty.impossible = data;
-
-	// 	logger.logSuccess("[MOD] TarkovCoop; Applied Bot Difficulty data");
-	// }		
 
 	for(let b in global._database.bots) {
 		// if(global._database.bots[b].health.BodyParts.Head !== undefined) {
@@ -217,9 +64,8 @@ exports.mod = (mod_info) => {
 
 		// 	global._database.bots[b].health.BodyParts.Chest.min = 85;
 		// 	global._database.bots[b].health.BodyParts.Chest.min = 85;
-			let botExperienceFilePath = 'user/mods/VVCoop_1.0.0/src/db/bots/' + b + '/experience.json';
-			fs.exists(botExperienceFilePath, (e) => {
-				if(e) {
+			let botExperienceFilePath = `${dbDir}/bots/${b}/experience.json`;
+			if(fs.existsSync(botExperienceFilePath)) {
 					fs.readFile(botExperienceFilePath, 'utf8' , (err, data) => {
 						if (err) {
 						console.error(err)
@@ -233,7 +79,6 @@ exports.mod = (mod_info) => {
 
 					});
 				}
-			});
 
 			// let botDifficultyFilePath = 'user/mods/VVCoop_1.0.0/src/db/bots/' + b + '/aiconfig.json';
 			// fs.exists(botDifficultyFilePath, (e) => {

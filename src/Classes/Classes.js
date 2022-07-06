@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { AccountServer } = require('../../../../../src/classes/account');
+const { AccountController } = require('../../../../../src/Controllers/AccountController');
 
 class VVMatch {
 	constructor() {
@@ -8,6 +8,11 @@ class VVMatch {
 		this.invites = [];
 		this.matching = {};
 		this.servers = {};
+	}
+
+	getAllAccounts() {
+		return AccountController
+			.getAllAccounts();
 	}
 
 	getServerByGroupId(groupId) {
@@ -59,7 +64,7 @@ class VVMatch {
 
 		// get all players, filter out self and anyone not here
 		let availablePlayers = 
-			AccountServer
+			AccountController
 			.getAllAccounts()
 			.filter(x=>x._id != sessionID);
 			// Turn these off when testing Server functionality
@@ -90,7 +95,8 @@ class VVMatch {
 		if(vvMatcher.groups[sessionID] == undefined)
 			return null;
 	
-		let fromAccount = AccountServer.getAllAccounts()
+		let fromAccount = AccountController
+		.getAllAccounts()
 		.find(x=>x._id == sessionID);
 
 		vvMatcher.invites.push(
@@ -149,7 +155,8 @@ class VVMatch {
 			players: []
 		}
 
-		let myAccounts = AccountServer.getAllAccounts()
+		let myAccounts = AccountController
+		.getAllAccounts()
 		.filter(x=>x.aid = sessionID);
 		for(let index in myAccounts) {
 			let acc = myAccounts[index];
@@ -187,10 +194,10 @@ class VVMatch {
 				let lastInvite = myInvites[lastInviteIndex];
 				if(lastInvite !== undefined) {
 					let fromAccount	= 
-					AccountServer.getAllAccounts().find(x=>x._id == lastInvite.from);
+					this.getAllAccounts().find(x=>x._id == lastInvite.from);
 
 					let toAccount = 
-					AccountServer.getAllAccounts().find(x=>x._id == sessionID);
+					this.getAllAccounts().find(x=>x._id == sessionID);
 
 					return lastInvite;
 				}
@@ -207,10 +214,10 @@ class VVMatch {
 		let lastInvite = vvMatcher.getLastInvite(sessionID);
 		if(lastInvite !== undefined) {
 			let fromAccount	= 
-			AccountServer.getAllAccounts().find(x=>x._id == lastInvite.from);
+			this.getAllAccounts().find(x=>x._id == lastInvite.from);
 
 			let toAccount = 
-			AccountServer.getAllAccounts().find(x=>x._id == sessionID);
+			this.getAllAccounts().find(x=>x._id == sessionID);
 
 			return response_f.noBody(lastInvite);
 		}
@@ -222,88 +229,5 @@ class VVMatch {
 
 const vvMatcher = new VVMatch();
 
-class VVBots {
-	constructor() {
-
-	}
-}
-
-class VVAccount {
-	constructor() {
-
-	}
-
-	static s_GetAllAccounts() {
-
-	}
-
-
-getAllAccounts() {
-  let fullyLoadedAccounts = [];
-
-    const profileFolders = fs.readdirSync(`user/profiles/`);
-// console.log(profileFolders);
-
-	// let ids = Object.keys(AccountServer.accounts);
-	// for (let i in ids) {
-	for (const id of profileFolders) {
-		// let id = ids[i];
-		if (!fileIO.exist(`user/profiles/${id}/character.json`)) continue;
-		let character = fileIO.readParsed(`user/profiles/${id}/character.json`);
-		
-		let obj = {
-			Info: {}
-		};
-
-		let profile = profile_f.handler.getPmcProfile(character.aid);
-
-		obj.Id = character.aid;
-		obj._id = character.aid;
-		obj.Level = character.Info.Level;
-		obj.lookingGroup = false;
-		if(character.matching !== undefined) {
-			obj.lookingGroup = character.matching.lookingForGroup;
-		}
-		obj.Info.Nickname = character.Info.Nickname;
-		obj.Info.Side = character.Info.Side;
-		obj.Info.Level = character.Info.Level;
-		obj.Info.MemberCategory = character.Info.MemberCategory;
-		obj.Info.Ignored = false;
-		obj.Info.Banned = false;
-		obj.PlayerVisualRepresentation = {
-			Info: obj.Info,
-			Customization: character.Customization,
-			// Equipment: character.Inventory.Equipment
-			// Equipment: character.Inventory
-		};
-		// obj.PlayerVisualRepresentation = profile;
-		fullyLoadedAccounts.push(obj);
-	}
-
-	// console.log(fullyLoadedAccounts);
-	return fullyLoadedAccounts;
-}
-
-
-}
-
-
-initMatchOverrides = function() {
-	match_f.handler.sendInvite = vvMatcher.sendInvite;
-	match_f.handler.getGroupStatus = vvMatcher.getGroupStatus;
-	match_f.handler.deleteGroup = vvMatcher.deleteGroup;
-	match_f.handler.groupSearchStart = vvMatcher.groupSearchStart;
-	match_f.handler.groupSearchStop = vvMatcher.groupSearchStop;
-	match_f.handler.groupLeaderStartedMatch = vvMatcher.groupLeaderStartedMatch;
-	match_f.handler.getInvites = vvMatcher.getInvites;
-	match_f.handler.groupInviteAccept = vvMatcher.groupInviteAccept;
-	match_f.handler.groupInviteDecline = vvMatcher.groupInviteDecline;
-
-
-	logger.logSuccess("[MOD] TarkovCoop; Match Override Successful");
-
-};
-
-module.exports = {
-	VVAccount, VVBots, VVMatch, vvMatcher
-};
+module.exports.VVMatch = VVMatch;
+module.exports.vvMatcher = new VVMatch();
