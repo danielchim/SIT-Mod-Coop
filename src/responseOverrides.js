@@ -122,7 +122,7 @@ initResponseOverrides = function() {
 				playersSpawnPoint: {}
 			};
 
-		let myAccount = AccountServer.getAllAccounts().find(x=>x._id == sessionID);
+		let myAccount = AccountController.getAllAccounts().find(x=>x._id == sessionID);
 		let thisServer = vvMatcher.getServerByGroupId(sessionID);
 
 		// console.log("New Server Started for AID " + sessionID + " on IP " + info);
