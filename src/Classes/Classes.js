@@ -173,12 +173,12 @@ class VVMatch {
 	}
 
 	groupSearchStart(sessionID, info) {
-		let myAccount = AccountServer.find(sessionID);
+		let myAccount = AccountController.find(sessionID);
 		if(myAccount.matching === undefined) myAccount.matching = {};
 		myAccount.matching.lookingForGroup = true;
 	}
 	groupSearchStop(sessionID, info) {
-		let myAccount = AccountServer.find(sessionID);
+		let myAccount = AccountController.find(sessionID);
 		if(myAccount.matching === undefined) myAccount.matching = {};
 		myAccount.matching.lookingForGroup = false;
 	}
