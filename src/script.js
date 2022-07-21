@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const WebSocket = require('ws'); // requires npm install ws on the Server
+// const WebSocket = require('ws'); // requires npm install ws on the Server
 const net = require('net'); // natural TCP Sockets
 const responseOverrides = require("./responseOverrides")
 const location = require('../../../../src/classes/location');

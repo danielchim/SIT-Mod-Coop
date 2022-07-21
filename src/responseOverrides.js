@@ -3,6 +3,7 @@ const { vvMatcher, VVMatch } = require('./Classes/Classes');
 const { FriendshipController } = require('../../../../src/Controllers/FriendshipController');
 const { ResponseController } = require('../../../../src/Controllers/ResponseController');
 const { ConfigController } = require('../../../../src/Controllers/ConfigController');
+const { AccountController } = require('../../../../src/Controllers/AccountController');
 const serverUrl = ResponseController.getHttpsUrl();
 
 const urlPrefixes = {
@@ -28,8 +29,8 @@ initResponseOverrides = function() {
 		}
 
 		const serverIAmIn = vvMatcher.getServerIAmIn(sessionID);
-		console.log("serverIAmIn");
-		console.log(serverIAmIn);
+		// console.log("serverIAmIn");
+		// console.log(serverIAmIn);
 
 		const d = location_f.handler.get(location_name);
 		if(sessionID != undefined) {
@@ -122,7 +123,7 @@ initResponseOverrides = function() {
 				playersSpawnPoint: {}
 			};
 
-		let myAccount = AccountServer.getAllAccounts().find(x=>x._id == sessionID);
+		let myAccount = AccountController.getAllAccounts().find(x=>x._id == sessionID);
 		let thisServer = vvMatcher.getServerByGroupId(sessionID);
 
 		// console.log("New Server Started for AID " + sessionID + " on IP " + info);
@@ -137,8 +138,9 @@ initResponseOverrides = function() {
 			action:
 		(url, info, sessionID) => { 
 
-			console.log(info);
-			console.log(sessionID);
+			logger.logInfo("/client/match/group/server/join");
+			logger.logInfo(info);
+			logger.logInfo(sessionID);
 
 			let groupId = info;
 			if(info.groupId !== undefined)
@@ -430,13 +432,15 @@ ResponseController.Routes.push(
 }
 });
 
-	ResponseController.addRoute["/client/match/group/server/players/spawn"] = 
+	ResponseController.addRoute("/client/match/group/server/players/spawn", 
 	  (url, info, sessionID) => { 
 
+		logger.logInfo("[Coop] NEW player added ");
 		console.log(info);
 		
 		let existingServer = vvMatcher.getServerByGroupId(info.groupId);
 		if(existingServer == null) {
+			logger.logError("[COOP] Couldn't find existing server")
 			return JSON.stringify("ERROR");
 		}
 
@@ -447,28 +451,28 @@ ResponseController.Routes.push(
 		existingServer.players.push(info);
 
 		return JSON.stringify("OK");
-	};
+	});
 
-	ResponseController.addRoute("/client/match/group/server/bots/spawn",
-	  (url, info, sessionID) => { 
+	// ResponseController.addRoute("/client/match/group/server/bots/spawn",
+	//   (url, info, sessionID) => { 
 
-		let existingServer = vvMatcher.getServerByGroupId(info.groupId);
-		if(existingServer == null) {
-			return JSON.stringify("ERROR");
-		}
+	// 	let existingServer = vvMatcher.getServerByGroupId(info.groupId);
+	// 	if(existingServer == null) {
+	// 		return JSON.stringify("ERROR");
+	// 	}
 
-		if(existingServer.bots === undefined) {
-			existingServer.bots = [];
-		}
+	// 	if(existingServer.bots === undefined) {
+	// 		existingServer.bots = [];
+	// 	}
 
-		// console.log(info);
-		// if(existingServer.bots.find(x=>x.accountId == info.accountId) === undefined) {
-			existingServer.bots.push(info);
-			logger.logInfo("Added one more bot " + info.accountId + " server " + info.groupId + " totalling " + existingServer.bots.length);
-		// }
+	// 	// console.log(info);
+	// 	// if(existingServer.bots.find(x=>x.accountId == info.accountId) === undefined) {
+	// 		existingServer.bots.push(info);
+	// 		logger.logInfo("Added one more bot " + info.accountId + " server " + info.groupId + " totalling " + existingServer.bots.length);
+	// 	// }
 
-		return JSON.stringify("OK");
-		});
+	// 	return JSON.stringify("OK");
+	// 	});
 
 
 		ResponseController.addRoute("/client/match/group/server/players/get",
@@ -519,37 +523,37 @@ ResponseController.Routes.push(
 		return response_f.nullResponse();
 	});
 
-	ResponseController.addRoute("/client/match/group/server/bot/add",
-	  (url, info, sessionID) => { 
-		if(info === undefined) {
-			console.error("No data provided");
-			return response_f.nullResponse();
-		}
-		if(info["groupId"] === undefined) 
-		{
-			console.error("groupId not provided");
-				return response_f.nullResponse();
-		}
+	// ResponseController.addRoute("/client/match/group/server/bot/add",
+	//   (url, info, sessionID) => { 
+	// 	if(info === undefined) {
+	// 		console.error("No data provided");
+	// 		return response_f.nullResponse();
+	// 	}
+	// 	if(info["groupId"] === undefined) 
+	// 	{
+	// 		console.error("groupId not provided");
+	// 			return response_f.nullResponse();
+	// 	}
 
-		if(vvMatcher.servers === undefined) {
-			console.error("server list is empty");
-			return response_f.nullResponse();
-		}
+	// 	if(vvMatcher.servers === undefined) {
+	// 		console.error("server list is empty");
+	// 		return response_f.nullResponse();
+	// 	}
 
-		if(vvMatcher.servers[info["groupId"]] === undefined) {
-			console.error("unable to server " + info["groupId"]);
-			return response_f.nullResponse();
-		}
+	// 	if(vvMatcher.servers[info["groupId"]] === undefined) {
+	// 		console.error("unable to server " + info["groupId"]);
+	// 		return response_f.nullResponse();
+	// 	}
 
-		if(vvMatcher.servers[info["groupId"]].bots === undefined) {
-			vvMatcher.servers[info["groupId"]].bots = {};
-		}
+	// 	if(vvMatcher.servers[info["groupId"]].bots === undefined) {
+	// 		vvMatcher.servers[info["groupId"]].bots = {};
+	// 	}
 
-		vvMatcher.servers[info["groupId"]].bots[info["botId"]] = info;
-		console.log(vvMatcher.servers[info["groupId"]].bots[info["botId"]]);
+	// 	vvMatcher.servers[info["groupId"]].bots[info["botId"]] = info;
+	// 	console.log(vvMatcher.servers[info["groupId"]].bots[info["botId"]]);
 
-		return response_f.nullResponse();
-	});
+	// 	return response_f.nullResponse();
+	// });
 
 	ResponseController.addRoute("/client/match/group/server/player/join",
 	  (url, info, sessionID) => { 
