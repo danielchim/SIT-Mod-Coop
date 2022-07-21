@@ -155,13 +155,13 @@ exports.mod = (mod_info) => {
 		});
 	}
 
-	const weatherDirectory = __dirname + "\\db\\weather";
+	const weatherDirectory = __dirname + "/db/weather";
 	// console.log(weatherDirectory);
 	//for(const index in global._database.weather) {
 	//	console.log(index);
 	let weatherIndex = 0;
 		for(const fileName of fs.readdirSync(weatherDirectory)) {
-			const weatherFilePath = weatherDirectory + "\\" + fileName;
+			const weatherFilePath = weatherDirectory + "/" + fileName;
 			fs.readFile(weatherFilePath, 'utf8' , (err, data) => {
 				if (err) {
 				console.error(err)
