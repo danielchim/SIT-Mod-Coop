@@ -200,27 +200,34 @@ initResponseOverrides = function() {
 	ResponseController.overrideRoute("/client/match/group/server/getPlayersSpawnPoint", 
 	  (url, info, sessionID) => { 
 
-		let existingServer = vvMatcher.getServerByGroupId(info.groupId);
-		if(existingServer == null) {
-			return response_f.getBody("ERROR");
-		}
+		vvMatcher.ServerSpawnPoint = info.playersSpawnPoint;
+		// let existingServer = vvMatcher.getServerByGroupId(info.groupId);
+		// if(existingServer == null) {
+		// 	return response_f.getBody("ERROR");
+		// }
 
+		console.log("getPlayersSpawnPoint");
+		console.log(vvMatcher.ServerSpawnPoint);
 
-		return JSON.stringify(existingServer.playersSpawnPoint);
+		return JSON.stringify(vvMatcher.ServerSpawnPoint);
 	});
 
 	// responses.staticResponses["/client/match/group/server/setPlayersSpawnPoint"] = 
 	ResponseController.overrideRoute("/client/match/group/server/setPlayersSpawnPoint", 
 	  (url, info, sessionID) => { 
 
-		let existingServer = vvMatcher.getServerByGroupId(info.groupId);
-		if(existingServer == null) {
-			return response_f.getBody("ERROR");
-		}
+		// let existingServer = vvMatcher.getServerByGroupId(info.groupId);
+		// if(existingServer == null) {
+		// 	return response_f.getBody("ERROR");
+		// }
 
-		existingServer.playersSpawnPoint = info.playersSpawnPoint;
+		// existingServer.playersSpawnPoint = info.playersSpawnPoint;
 
-		return JSON.stringify(existingServer.playersSpawnPoint);
+		vvMatcher.ServerSpawnPoint = info.playersSpawnPoint;
+		console.log("setPlayersSpawnPoint");
+		console.log(info);
+		console.log(vvMatcher.ServerSpawnPoint);
+		return JSON.stringify(vvMatcher.ServerSpawnPoint);
 	});
 
 	ResponseController.RoutesToNotLog.push("/client/match/group/server/parity");
