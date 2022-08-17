@@ -16,7 +16,18 @@ const urlPrefixes = {
 	"groupInvite": "/client/match/group/invite/"
 }
 
-initResponseOverrides = function() {
+initResponseOverrides = function(mod_info) {
+
+	/**
+	 * A temporary route to load the IP and Port of the "HOST" for the "Game Server"
+	 */
+	ResponseController.addRoute("/coop/getCoopIpAndPort",
+		(url, info, sessionID) => {
+
+			return JSON.stringify({ ip: mod_info.GameServerIP, port: GameServerPort });
+
+		}
+	);
 
 	// Override Loot Generation. 
 	// If Server: Generate as normal

@@ -55,7 +55,7 @@ exports.mod = (mod_info) => {
 
 	// initMatchOverrides();
 
-	initResponseOverrides();
+	initResponseOverrides(mod_info);
 
 	for(let b in global._database.bots) {
 		// if(global._database.bots[b].health.BodyParts.Head !== undefined) {
