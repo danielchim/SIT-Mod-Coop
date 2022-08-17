@@ -6,6 +6,9 @@ const { ConfigController } = require('../../../../src/Controllers/ConfigControll
 const { AccountController } = require('../../../../src/Controllers/AccountController');
 const serverUrl = ResponseController.getHttpsUrl();
 
+var lastLoot;
+var lastLocation;
+
 const urlPrefixes = {
 	"location": "/client/location/",
 	"group": "/client/match/group/",
@@ -21,36 +24,52 @@ initResponseOverrides = function() {
 	ResponseController.overrideRoute("/client/location/getLocalloot", 
 	(url, info, sessionID) => {
 		let location_name = "";
+		let forceNewLoot = "false";
 		const params = new URL(serverUrl + url).searchParams;
 		if (typeof info.locationId != "undefined") {
 		  location_name = info.locationId;
 		} else {
 		  location_name = params.get("locationId");
+		  forceNewLoot = params.get("force");
 		}
 
 		const serverIAmIn = vvMatcher.getServerIAmIn(sessionID);
 		// console.log("serverIAmIn");
 		// console.log(serverIAmIn);
-
+		// console.log(forceNewLoot);
+		
+		// ==============================================
+		// This is very simple way of doing it. 
+		// Load's the last loot
 		const d = location_f.handler.get(location_name);
-		if(sessionID != undefined) {
-			let serverViaHost = vvMatcher.getServerByGroupId(sessionID);
-			// let serverViaClient = vvMatcher.servers // vvMatcher.getServerByGroupId(info.groupId);
-			if(serverViaHost !== undefined) {
-				serverViaHost.Loot = d.Loot;
-				logger.logSuccess("Successfully saved Loot to Game Server {" + sessionID + "}");
-			} 
-			else {
-				for(let itemIdOfServer in vvMatcher.servers) {
-					if(vvMatcher.servers[itemIdOfServer] !== undefined && vvMatcher.servers[itemIdOfServer].Loot !== undefined) {
-						d.Loot = vvMatcher.servers[itemIdOfServer].Loot;
-						logger.logSuccess("Successfully loaded Loot from Game Server {" + itemIdOfServer + "}");
-						break;
-					}
-				}
-			}
-
+		if(lastLocation !== location_name || forceNewLoot === "true") {
+			lastLocation = location_name;
+			lastLoot = d.Loot;
+			logger.logSuccess("Successfully saved Loot to Game Server {" + sessionID + "}");
 		}
+		else {
+			d.Loot = lastLoot;
+			logger.logSuccess("Successfully loaded Loot from Game Server");
+		}
+
+		// if(sessionID != undefined) {
+		// 	let serverViaHost = vvMatcher.getServerByGroupId(sessionID);
+		// 	// let serverViaClient = vvMatcher.servers // vvMatcher.getServerByGroupId(info.groupId);
+		// 	if(serverViaHost !== undefined) {
+		// 		serverViaHost.Loot = d.Loot;
+		// 		logger.logSuccess("Successfully saved Loot to Game Server {" + sessionID + "}");
+		// 	} 
+		// 	else {
+		// 		for(let itemIdOfServer in vvMatcher.servers) {
+		// 			if(vvMatcher.servers[itemIdOfServer] !== undefined && vvMatcher.servers[itemIdOfServer].Loot !== undefined) {
+		// 				d.Loot = vvMatcher.servers[itemIdOfServer].Loot;
+		// 				logger.logSuccess("Successfully loaded Loot from Game Server {" + itemIdOfServer + "}");
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
+
+		// }
 
 		return response_f.getBody(d);
 	  });
@@ -200,12 +219,6 @@ initResponseOverrides = function() {
 	ResponseController.overrideRoute("/client/match/group/server/getPlayersSpawnPoint", 
 	  (url, info, sessionID) => { 
 
-		vvMatcher.ServerSpawnPoint = info.playersSpawnPoint;
-		// let existingServer = vvMatcher.getServerByGroupId(info.groupId);
-		// if(existingServer == null) {
-		// 	return response_f.getBody("ERROR");
-		// }
-
 		console.log("getPlayersSpawnPoint");
 		console.log(vvMatcher.ServerSpawnPoint);
 
@@ -223,7 +236,10 @@ initResponseOverrides = function() {
 
 		// existingServer.playersSpawnPoint = info.playersSpawnPoint;
 
-		vvMatcher.ServerSpawnPoint = info.playersSpawnPoint;
+		vvMatcher.ServerSpawnPoint = { x: 0, y: 0, z: 0 };
+		vvMatcher.ServerSpawnPoint.x = info.playersSpawnPointx;
+		vvMatcher.ServerSpawnPoint.y = info.playersSpawnPointy;
+		vvMatcher.ServerSpawnPoint.z = info.playersSpawnPointz;
 		console.log("setPlayersSpawnPoint");
 		console.log(info);
 		console.log(vvMatcher.ServerSpawnPoint);
