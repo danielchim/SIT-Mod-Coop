@@ -7,6 +7,10 @@
 		"src/script.js": "TamperModLoad"
 	},
 	"required": [],
+	"GameServerIPDescription (DO NOT MODIFY)": "Sets the IP of the Game Server to connect to",
+	"GameServerIP": "",
+	"GameServerPortDescription (DO NOT MODIFY)": "Sets the Port of the Game Server to connect to",
+	"GameServerPort": "",
 	"Mode": "Coop",
 	"BotDifficultyMiniMod": {
 		"enable" : true
